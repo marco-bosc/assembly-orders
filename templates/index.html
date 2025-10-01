@@ -1,0 +1,254 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrazione Attività</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .hidden { display: none; }
+        .date-btns .btn { width: 100%; margin-bottom: 8px; }
+        .confirm-highlight { box-shadow: 0 0 0 .2rem rgba(255,193,7,.5); } /* yellow highlight */
+    </style>
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <span class="navbar-brand">Registrazione Attività</span>
+        <div class="d-flex">
+            <a href="/history" class="btn btn-outline-light">Storico</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="card shadow">
+        <div class="card-body">
+            <form id="mainForm" method="POST" autocomplete="off">
+                <!-- User section -->
+                <div id="user_section" class="mb-4">
+                    <label for="user_input" class="form-label">Scansiona o inserisci codice utente</label>
+                    <input type="text" id="user_input" class="form-control form-control-lg" placeholder="Codice utente" autofocus required>
+                    <div class="form-text">Usa la pistola barcode o digita il codice e premi <strong>Invio</strong>.</div>
+                </div>
+
+                <!-- Main form section (hidden until valid user) -->
+                <div id="form_section" class="hidden">
+                    <input type="hidden" name="user_id" id="user_id">
+                    <div class="alert alert-info" id="user_name"></div>
+
+                    <h5 class="mt-3">Seleziona data</h5>
+                    <p id="selected_date_text">Data: {{ today_text }}</p>
+                    <div class="date-btns row g-2 mb-2">
+                        {% for d in dates %}
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="btn btn-outline-primary" onclick="setDate('{{ d.value }}')">{{ d.label }}</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="date" id="date_input" value="{{ today_value }}">
+
+                    <div class="form-check mt-3 mb-3">
+                        <input class="form-check-input" type="checkbox" name="non_order" id="non_order" onchange="toggleOrderFields()">
+                        <label class="form-check-label" for="non_order">Non è un ordine</label>
+                    </div>
+
+                    <!-- Order fields -->
+                    <div id="order_fields" class="mt-2">
+                        <div class="mb-3">
+                            <label for="production_order" class="form-label">Codice ordine</label>
+                            <input type="text" name="production_order" id="production_order" class="form-control" >
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Numero maglie</label>
+                            <input type="number" name="quantity" id="quantity" class="form-control" min="0">
+                        </div>
+
+                        <p class="mb-1">Operazioni manuali:</p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="deburring" id="deburring">
+                            <label class="form-check-label" for="deburring">Sbavatura</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="sorting" id="sorting">
+                            <label class="form-check-label" for="sorting">Cernitura</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="waste_disposal" id="waste_disposal">
+                            <label class="form-check-label" for="waste_disposal">Smaltimento rifiuti</label>
+                        </div>
+                    </div>
+
+                    <!-- Non-order fields -->
+                    <div id="non_order_fields" class="mt-3" style="display:none;">
+                        <label class="form-label">Causale (facoltativo)</label>
+                        <input type="text" name="causale" class="form-control">
+                    </div>
+
+                    <!-- Times -->
+                    <div class="mt-3">
+                        <label class="form-label">Orario inizio</label>
+                        <input type="time" name="start_time" id="start_time" class="form-control" required>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Orario fine</label>
+                        <input type="time" name="finish_time" id="finish_time" class="form-control" required>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button id="submitBtn" type="submit" class="btn btn-success btn-lg">Conferma</button>
+                    </div>
+
+                    <div id="confirm_hint" class="mt-2 text-center text-warning" style="display:none;">
+                        Premi <strong>Invio</strong> di nuovo per confermare l'invio.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ---------- check user on Enter ---------- */
+document.getElementById("user_input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        let code = this.value.trim();
+        if (!code) return;
+        fetch("/check_user/" + encodeURIComponent(code))
+            .then(r => r.json())
+            .then(data => {
+                if (data.exists) {
+                    document.getElementById("user_id").value = data.id;
+                    document.getElementById("user_name").innerText = "Utente: " + data.name;
+                    document.getElementById("user_section").style.display = "none";
+                    document.getElementById("form_section").classList.remove("hidden");
+                    // initialize required fields based on checkbox state
+                    toggleOrderFields();
+                    // set focus to production_order
+                    document.getElementById("production_order").focus();
+                } else {
+                    alert("Utente non trovato!");
+                    document.getElementById("user_input").value = "";
+                }
+            })
+            .catch(err => { console.error(err); alert("Errore server."); });
+    }
+});
+
+/* ---------- dates ---------- */
+function setDate(dateStr) {
+    document.getElementById("date_input").value = dateStr;
+    // format textual date in Italian
+    const d = new Date(dateStr + "T00:00:00");
+    const giorni = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+    const mesi = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+    const txt = `Data: ${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]} ${d.getFullYear()}`;
+    document.getElementById("selected_date_text").innerText = txt;
+}
+// set initial date text from server-rendered hidden value
+window.addEventListener("load", function() {
+    const v = document.getElementById("date_input").value;
+    if (v) setDate(v);
+});
+
+/* ---------- toggle required fields based on non_order ---------- */
+function toggleOrderFields() {
+    const check = document.getElementById("non_order").checked;
+    document.getElementById("order_fields").style.display = check ? "none" : "block";
+    document.getElementById("non_order_fields").style.display = check ? "block" : "none";
+
+    const production = document.getElementById("production_order");
+    const quantity = document.getElementById("quantity");
+    if (!check) {
+        production.setAttribute("required", "required");
+        quantity.setAttribute("required", "required");
+    } else {
+        production.removeAttribute("required");
+        quantity.removeAttribute("required");
+    }
+}
+// call on load to enforce initial state when form shown
+// (will be called after user check success)
+
+/* ---------- keyboard flow: order -> quantity -> start -> finish ---------- */
+document.getElementById("production_order").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("quantity").focus();
+    }
+});
+document.getElementById("quantity").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("start_time").focus();
+    }
+});
+document.getElementById("start_time").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("finish_time").focus();
+    }
+});
+
+/* ---------- double-enter confirmation logic ---------- */
+const form = document.getElementById("mainForm");
+const submitBtn = document.getElementById("submitBtn");
+let confirmPending = false;
+
+form.addEventListener("submit", function(e) {
+    if (!confirmPending) {
+        // first submit attempt -> block, show hint and focus submit button
+        e.preventDefault();
+        confirmPending = true;
+        submitBtn.focus();
+        submitBtn.classList.add("confirm-highlight");
+        document.getElementById("confirm_hint").style.display = "block";
+    } else {
+        // second submit (confirmed) -> allow (do not preventDefault)
+        // reset state (it will be redirected by server)
+        confirmPending = false;
+        submitBtn.classList.remove("confirm-highlight");
+        document.getElementById("confirm_hint").style.display = "none";
+        // allow the form to be submitted normally
+    }
+});
+
+// If user presses Enter while focused on finish_time, trigger the first confirmation step
+document.getElementById("finish_time").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        if (!confirmPending) {
+            confirmPending = true;
+            submitBtn.focus();
+            submitBtn.classList.add("confirm-highlight");
+            document.getElementById("confirm_hint").style.display = "block";
+        } else {
+            // If already pending, let the form submit (submit event handles second step)
+        }
+    }
+});
+
+// Reset confirmation if user clicks anywhere else or starts editing again
+document.addEventListener("click", function(e) {
+    if (!submitBtn.contains(e.target)) {
+        confirmPending = false;
+        submitBtn.classList.remove("confirm-highlight");
+        document.getElementById("confirm_hint").style.display = "none";
+    }
+});
+["input","change"].forEach(evt => {
+    form.addEventListener(evt, () => {
+        confirmPending = false;
+        submitBtn.classList.remove("confirm-highlight");
+        document.getElementById("confirm_hint").style.display = "none";
+    });
+});
+</script>
+</body>
+</html>

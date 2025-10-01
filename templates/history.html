@@ -1,0 +1,86 @@
+<!-- templates/history.html -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Storico Attività</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">Registrazione Attività</a>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="card shadow">
+        <div class="card-body">
+            <h3>Storico</h3>
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Codice utente</label>
+                    <input type="text" name="code" class="form-control" value="{{ code or '' }}" required>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Data inizio</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Data fine</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filtra</button>
+                </div>
+            </form>
+
+            <hr>
+
+            {% if records %}
+                <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Non ordine</th>
+                            <th>Ordine</th>
+                            <th>Quantità</th>
+                            <th>Sbavatura</th>
+                            <th>Cernitura</th>
+                            <th>Smaltimento</th>
+                            <th>Causale</th>
+                            <th>Inizio</th>
+                            <th>Fine</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in records %}
+                        <tr>
+                            <td>{{ r['date'] }}</td>
+                            <td>{{ 'Sì' if r['non_order'] else 'No' }}</td>
+                            <td>{{ r['production_order'] or '' }}</td>
+                            <td>{{ r['quantity'] or '' }}</td>
+                            <td>{{ 'Sì' if r['deburring'] else 'No' }}</td>
+                            <td>{{ 'Sì' if r['sorting'] else 'No' }}</td>
+                            <td>{{ 'Sì' if r['waste_disposal'] else 'No' }}</td>
+                            <td>{{ r['causale'] or '' }}</td>
+                            <td>{{ r['start_time'] or '' }}</td>
+                            <td>{{ r['finish_time'] or '' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            {% elif code %}
+                <p class="text-muted">Nessun record trovato per il codice e le date selezionate.</p>
+            {% endif %}
+
+            <a href="/" class="btn btn-link mt-3">Torna alla pagina principale</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

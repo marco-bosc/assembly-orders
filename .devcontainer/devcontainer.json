@@ -1,0 +1,6 @@
+{
+  "name": "Python Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "postCreateCommand": "python -m venv venv && . venv/bin/activate && pip install -r requirements.txt"
+}
