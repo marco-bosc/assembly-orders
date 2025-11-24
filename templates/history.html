@@ -1,4 +1,3 @@
-<!-- templates/history.html -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -48,8 +47,11 @@
                             <th>Ordine</th>
                             <th>Quantità</th>
                             <th>Sbavatura</th>
-                            <th>Cernitura</th>
-                            <th>Smaltimento</th>
+                            <th># Sbav.</th>
+                            <th>Cernita</th>
+                            <th># Cern.</th>
+                            <th>Da smaltire</th>
+                            <th># Smalt.</th>
                             <th>Causale</th>
                             <th>Inizio</th>
                             <th>Fine</th>
@@ -63,8 +65,11 @@
                             <td>{{ r['production_order'] or '' }}</td>
                             <td>{{ r['quantity'] or '' }}</td>
                             <td>{{ 'Sì' if r['deburring'] else 'No' }}</td>
+                            <td>{{ r['deburring_qty'] or '' }}</td>
                             <td>{{ 'Sì' if r['sorting'] else 'No' }}</td>
+                            <td>{{ r['sorting_qty'] or '' }}</td>
                             <td>{{ 'Sì' if r['waste_disposal'] else 'No' }}</td>
+                            <td>{{ r['waste_qty'] or '' }}</td>
                             <td>{{ r['causale'] or '' }}</td>
                             <td>{{ r['start_time'] or '' }}</td>
                             <td>{{ r['finish_time'] or '' }}</td>
