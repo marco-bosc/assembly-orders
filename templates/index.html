@@ -51,11 +51,28 @@
                         {% endfor %}
                     </div>
                     <input type="hidden" name="date" id="date_input" value="{{ today_value }}">
-
+<!-- 
                     <div class="form-check mt-3 mb-3">
                         <input class="form-check-input" type="checkbox" name="non_order" id="non_order" onchange="toggleOrderFields()">
-                        <label class="form-check-label" for="non_order">Non è un ordine</label>
+                        <label class="form-check-label" for="non_order">Non è un ordine di assemblaggio</label>
+                    </div> -->
+
+                    <h5 class="mt-3">Tipo attività</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="activity_type" id="type_assembly" value="assembly" checked onchange="toggleActivityType()">
+                        <label class="form-check-label" for="type_assembly">Ordine di assemblaggio</label>
                     </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="activity_type" id="type_cut" value="cut" onchange="toggleActivityType()">
+                        <label class="form-check-label" for="type_cut">Taglio alla sega</label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="activity_type" id="type_other" value="other" onchange="toggleActivityType()">
+                        <label class="form-check-label" for="type_other">Altro (pausa)</label>
+                    </div>
+
 
                     <!-- Order fields -->
                     <div id="order_fields" class="mt-3">
@@ -67,6 +84,19 @@
                             <label for="quantity" class="form-label">Numero maglie</label>
                             <input type="number" name="quantity" id="quantity" class="form-control" min="0">
                         </div>
+                    </div>
+
+                    <!-- Non-order fields -->
+                    <div id="non_order_fields" class="mt-3" style="display:none;">
+                        <div id="cut_fields" style="display:none;">
+                            <label class="form-label">Modello</label>
+                            <input type="text" name="cut_model" id="cut_model" class="form-control mb-3">
+
+                            <label class="form-label">Quantità</label>
+                            <input type="number" name="cut_quantity" id="cut_quantity" class="form-control" min="0">
+                        </div>
+                        <label class="form-label">Causale (facoltativo)</label>
+                        <input type="text" name="causale" class="form-control">
                     </div>
 
                     <!-- Times first (start, finish) -->
@@ -106,12 +136,6 @@
                         <input type="number" id="waste_qty" name="waste_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
                     </div>
 
-                    <!-- Non-order fields -->
-                    <div id="non_order_fields" class="mt-3" style="display:none;">
-                        <label class="form-label">Causale (facoltativo)</label>
-                        <input type="text" name="causale" class="form-control">
-                    </div>
-
                     <div class="mt-4 text-end">
                         <button id="cancelBtn" type="button" class="btn btn-secondary btn-lg me-2" onclick="resetToUserEntry()">Annulla</button>
                         <button id="submitBtn" type="submit" class="btn btn-success btn-lg">Conferma</button>
@@ -140,7 +164,7 @@ function showFormForUser(id, name) {
     const navHistory = document.getElementById("nav_history");
     if (navHistory) navHistory.style.display = "none";
     // set required fields according to checkbox state
-    toggleOrderFields();
+    toggleActivityType();
     // focus first input (production_order)
     setTimeout(() => { document.getElementById("production_order").focus(); }, 50);
 }
@@ -205,22 +229,66 @@ window.addEventListener("load", function() {
     if (navHistory) navHistory.style.display = "inline-block";
 });
 
-/* ---------- toggle required fields based on non_order ---------- */
-function toggleOrderFields() {
-    const check = document.getElementById("non_order").checked;
-    document.getElementById("order_fields").style.display = check ? "none" : "block";
-    document.getElementById("non_order_fields").style.display = check ? "block" : "none";
+// /* ---------- toggle required fields based on non_order ---------- */
+// function toggleOrderFields() {
+//     const check = document.getElementById("non_order").checked;
+//     document.getElementById("order_fields").style.display = check ? "none" : "block";
+//     document.getElementById("non_order_fields").style.display = check ? "block" : "none";
 
-    const production = document.getElementById("production_order");
-    const quantity = document.getElementById("quantity");
-    if (!check) {
-        production.setAttribute("required", "required");
-        quantity.setAttribute("required", "required");
-    } else {
-        production.removeAttribute("required");
-        quantity.removeAttribute("required");
+//     const production = document.getElementById("production_order");
+//     const quantity = document.getElementById("quantity");
+//     if (!check) {
+//         production.setAttribute("required", "required");
+//         quantity.setAttribute("required", "required");
+//     } else {
+//         production.removeAttribute("required");
+//         quantity.removeAttribute("required");
+//     }
+// }
+
+function toggleActivityType() {
+    const assembly = document.getElementById("type_assembly").checked;
+    const cut = document.getElementById("type_cut").checked;
+
+    const orderFields = document.getElementById("order_fields");
+    const nonOrderFields = document.getElementById("non_order_fields");
+    const cutFields = document.getElementById("cut_fields");
+
+    // RESET requirement
+    document.getElementById("production_order").removeAttribute("required");
+    document.getElementById("quantity").removeAttribute("required");
+    document.getElementById("cut_model").removeAttribute("required");
+    document.getElementById("cut_quantity").removeAttribute("required");
+
+    if (assembly) {
+        // solo ordine di assemblaggio
+        orderFields.style.display = "block";
+        nonOrderFields.style.display = "none";
+        cutFields.style.display = "none";
+
+        // obbligatori
+        document.getElementById("production_order").setAttribute("required", "required");
+        document.getElementById("quantity").setAttribute("required", "required");
+    }
+    else if (cut) {
+        // taglio alla sega: niente order_fields
+        orderFields.style.display = "none";
+        nonOrderFields.style.display = "block";
+        cutFields.style.display = "block";
+
+        // obbligatori
+        document.getElementById("cut_model").setAttribute("required", "required");
+        document.getElementById("cut_quantity").setAttribute("required", "required");
+    }
+    else {
+        // altro (pausa)
+        orderFields.style.display = "none";
+        nonOrderFields.style.display = "block";
+        cutFields.style.display = "none";
+        // nessun required
     }
 }
+
 
 /* ---------- operations: show qty input when checkbox checked and make qty required ---------- */
 function toggleOpQty(checkboxId, qtyId) {
@@ -254,6 +322,22 @@ document.getElementById("quantity").addEventListener("keydown", function(e) {
 document.getElementById("start_time").addEventListener("keydown", function(e) {
     if (e.key === "Enter") { e.preventDefault(); document.getElementById("finish_time").focus(); }
 });
+
+/* ---------- keyboard flow for CUT MODE ---------- */
+document.getElementById("cut_model").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("cut_quantity").focus();
+    }
+});
+
+document.getElementById("cut_quantity").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("start_time").focus();
+    }
+});
+
 
 /* ---------- double-enter confirmation logic ---------- */
 const form = document.getElementById("mainForm");

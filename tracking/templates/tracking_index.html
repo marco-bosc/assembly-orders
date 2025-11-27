@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registrazione DDT & Tracking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f5f5f5; }
+        .hidden { display:none; }
+        .card { max-width:600px; margin:auto; }
+        .tracking-link { font-size:1.1rem; margin-top:10px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <span class="navbar-brand">Registrazione Tracking</span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card shadow">
+        <div class="card-body">
+            <h4 class="mb-3">Scannerizza DDT e Tracking</h4>
+
+            <form id="trackingForm" autocomplete="off">
+                <div class="mb-3">
+                    <label class="form-label">Numero DDT</label>
+                    <input type="text" id="ddt_input" name="ddt" class="form-control form-control-lg" placeholder="Scansiona DDT" autofocus required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tracking</label>
+                    <input type="text" id="tracking_input" name="tracking" class="form-control form-control-lg" placeholder="Scansiona Tracking" required>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 btn-lg mt-3">Salva</button>
+            </form>
+
+            <div id="result" class="tracking-link hidden"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Riconoscimento corriere automatico rimosso – ora decide il backend
+function detectCarrier(code) {
+    return { carrier: "", url: null };
+}
+
+
+// Flusso Zebra pistola barcode: Enter dopo ogni codice
+const ddtInput = document.getElementById("ddt_input");
+const trackInput = document.getElementById("tracking_input");
+
+// Enter dopo DDT → passa al tracking
+
+ddtInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        trackInput.focus();
+    }
+});
+
+// Enter dopo tracking → invio
+trackInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("trackingForm").requestSubmit();
+    }
+});
+
+// Submit form
+const form = document.getElementById("trackingForm");
+form.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const ddt = ddtInput.value.trim();
+    const trk = trackInput.value.trim();
+
+    fetch('/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ ddt: ddt, tracking: trk })
+    })
+    .then(r => r.json())
+    .then(data => {
+        let html = `<strong>DDT:</strong> ${data.ddt}<br>`;
+        html += `<strong>Tracking:</strong> ${data.tracking}<br>`;
+        html += `<strong>Corriere:</strong> ${data.carrier}<br>`;
+
+        if (data.tracking_url) {
+            html += `<a href="${data.tracking_url}" target="_blank" class="btn btn-primary mt-2">Apri Tracking</a>`;
+        } else {
+            html += `<span class="text-danger">Corriere non riconosciuto</span>`;
+        }
+
+        document.getElementById('result').innerHTML = html;
+        document.getElementById('result').classList.remove('hidden');
+
+        form.reset();
+        ddtInput.focus();
+    });
+
+    document.getElementById("result").innerHTML = html;
+    document.getElementById("result").classList.remove("hidden");
+
+    form.reset();
+    ddtInput.focus();
+});
+</script>
+
+</body>
+</html>

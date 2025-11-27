@@ -5,24 +5,24 @@ from datetime import date, timedelta
 DB_PATH = "database.db"
 app = Flask(__name__)
 
-def ensure_columns():
-    """Add quantity columns for operations if they don't exist (safe to run every start)."""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    # get existing columns
-    cur.execute("PRAGMA table_info(records)")
-    cols = [r[1] for r in cur.fetchall()]
-    additions = []
-    if "deburring_qty" not in cols:
-        additions.append("ALTER TABLE records ADD COLUMN deburring_qty INTEGER")
-    if "sorting_qty" not in cols:
-        additions.append("ALTER TABLE records ADD COLUMN sorting_qty INTEGER")
-    if "waste_qty" not in cols:
-        additions.append("ALTER TABLE records ADD COLUMN waste_qty INTEGER")
-    for sql in additions:
-        cur.execute(sql)
-    conn.commit()
-    conn.close()
+# def ensure_columns():
+#     """Add quantity columns for operations if they don't exist (safe to run every start)."""
+#     conn = sqlite3.connect(DB_PATH)
+#     cur = conn.cursor()
+#     # get existing columns
+#     cur.execute("PRAGMA table_info(records)")
+#     cols = [r[1] for r in cur.fetchall()]
+#     additions = []
+#     if "deburring_qty" not in cols:
+#         additions.append("ALTER TABLE records ADD COLUMN deburring_qty INTEGER")
+#     if "sorting_qty" not in cols:
+#         additions.append("ALTER TABLE records ADD COLUMN sorting_qty INTEGER")
+#     if "waste_qty" not in cols:
+#         additions.append("ALTER TABLE records ADD COLUMN waste_qty INTEGER")
+#     for sql in additions:
+#         cur.execute(sql)
+#     conn.commit()
+#     conn.close()
 
 def get_user_by_code(code):
     conn = sqlite3.connect(DB_PATH)
@@ -47,7 +47,8 @@ def index():
         # Save new record
         user_id = request.form.get("user_id")
         record_date = request.form.get("date")  # YYYY-MM-DD
-        non_order = 1 if request.form.get("non_order") == "on" else 0
+        activity_type = request.form.get("activity_type")
+        non_order = 1 if activity_type in ["cut", "other"] else 0
 
         production_order = None if non_order else (request.form.get("production_order") or None)
         quantity_raw = None if non_order else request.form.get("quantity")
@@ -69,6 +70,8 @@ def index():
         start_time = request.form.get("start_time") if request.form.get("start_time") else None
         finish_time = request.form.get("finish_time") if request.form.get("finish_time") else None
 
+        cut_model = request.form.get("cut_model") if request.form.get("activity_type") == "cut" else None
+
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
         cur.execute("""
@@ -77,14 +80,14 @@ def index():
                 deburring, deburring_qty,
                 sorting, sorting_qty,
                 waste_disposal, waste_qty,
-                start_time, finish_time, non_order, causale
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                start_time, finish_time, non_order, causale, cut_model
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             record_date, user_id, production_order, quantity,
             deburring, deburring_qty,
             sorting, sorting_qty,
             waste_disposal, waste_qty,
-            start_time, finish_time, non_order, causale
+            start_time, finish_time, non_order, causale, cut_model
         ))
         conn.commit()
         conn.close()

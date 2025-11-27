@@ -1,7 +1,7 @@
 # create_tables.py
 import sqlite3
 
-DB = "database.db"
+DB = "database3.db"
 
 conn = sqlite3.connect(DB)
 c = conn.cursor()
@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 # records table
 c.execute('''
+
 CREATE TABLE IF NOT EXISTS records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
@@ -25,14 +26,17 @@ CREATE TABLE IF NOT EXISTS records (
     production_order TEXT,
     quantity INTEGER,
     deburring INTEGER DEFAULT 0,
+    deburring_qty INTEGER,
     sorting INTEGER DEFAULT 0,
+    sorting_qty INTEGER,
     waste_disposal INTEGER DEFAULT 0,
+    waste_qty INTEGER,
     start_time TEXT,
     finish_time TEXT,
     non_order INTEGER DEFAULT 0,
     causale TEXT,
     FOREIGN KEY(user_id) REFERENCES users(id)
-)
+);
 ''')
 
 # Insert test user Marco Palla code 222 if not exists
