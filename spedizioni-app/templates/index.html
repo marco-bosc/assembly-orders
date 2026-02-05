@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Assembly Shipping</title>
+<style>
+body { margin:0; font-family:sans-serif; background:#f0f0f0; }
+.container { display:flex; flex-direction:column; height:100vh; padding:10px; gap:10px; }
+.box { flex:1; border-radius:20px; padding:20px; cursor:pointer; transition: all 0.3s; display:flex; flex-direction:column; }
+.active { opacity:1; }
+.inactive { opacity:0.4; }
+.blue { background:#1e40af; color:white; }
+.green { background:#16a34a; color:white; }
+input { padding:10px; font-size:16px; margin-bottom:10px; border-radius:10px; border:1px solid #ccc; }
+button { padding:10px; font-size:16px; border-radius:10px; border:none; cursor:pointer; margin-top:5px; }
+button.save { background:#10b981; color:white; }
+button.print { background:#000; color:white; }
+.last-saved { margin-top:10px; font-weight:bold; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="boxDdt" class="box blue active">
+    <h2>📦 Registra Spedizione</h2>
+    <input id="ddtInput" placeholder="Numero DDT">
+    <input id="trackingInput" placeholder="Tracking Number">
+    <button class="save" onclick="saveRecord()">Salva</button>
+    <div id="lastSaved" class="last-saved">
+      {% if saved %}
+        Ultimo salvato: {{ saved.ddt }} - {{ saved.tracking }}
+        <button onclick="deleteLast()">Elimina</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="boxPrint" class="box green inactive">
+    <h2>🎫 Scan & Print</h2>
+    <input id="parcelInput" placeholder="Scansiona Parcel ID">
+    <button class="print" onclick="printLabel()">Stampa etichetta</button>
+    <div id="printStatus" class="last-saved"></div>
+  </div>
+</div>
+
+<script>
+let active = 'ddt';
+const boxDdt = document.getElementById('boxDdt');
+const boxPrint = document.getElementById('boxPrint');
+const ddtInput = document.getElementById('ddtInput');
+const trackingInput = document.getElementById('trackingInput');
+const parcelInput = document.getElementById('parcelInput');
+const lastSaved = document.getElementById('lastSaved');
+
+// Funzione per attivare sezione e mettere focus su input
+function setActive(section){
+  active = section;
+  if(section==='ddt'){
+    boxDdt.classList.add('active'); boxDdt.classList.remove('inactive');
+    boxPrint.classList.add('inactive'); boxPrint.classList.remove('active');
+    ddtInput.focus();
+  } else {
+    boxPrint.classList.add('active'); boxPrint.classList.remove('inactive');
+    boxDdt.classList.add('inactive'); boxDdt.classList.remove('active');
+    parcelInput.focus();
+  }
+}
+
+// Click sull’area (ma non input o button) → attiva focus
+boxDdt.addEventListener('click', e=>{
+  if(e.target.tagName!=='INPUT' && e.target.tagName!=='BUTTON') setActive('ddt');
+});
+boxPrint.addEventListener('click', e=>{
+  if(e.target.tagName!=='INPUT' && e.target.tagName!=='BUTTON') setActive('print');
+});
+
+// Navigazione con ENTER
+ddtInput.addEventListener('keydown', e=>{if(e.key==='Enter'){ trackingInput.focus(); e.preventDefault(); }});
+trackingInput.addEventListener('keydown', e=>{if(e.key==='Enter'){ saveRecord(); e.preventDefault(); }});
+parcelInput.addEventListener('keydown', e=>{if(e.key==='Enter'){ printLabel(); e.preventDefault(); }});
+
+// Salvataggio DDT + Tracking
+async function saveRecord(){
+  const ddt = ddtInput.value.trim();
+  const tracking = trackingInput.value.trim();
+  if(!ddt || !tracking){ alert('Compila tutti i campi'); return; }
+
+  try {
+    const res = await fetch('/save', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ddt, tracking})
+    });
+    const data = await res.json();
+    lastSaved.innerHTML = `Ultimo salvato: ${data.ddt} - ${data.tracking} 
+      <button onclick="deleteLast()">Elimina</button>`;
+    ddtInput.value=''; trackingInput.value=''; ddtInput.focus();
+  } catch(err){ alert('Errore salvataggio'); console.error(err); }
+}
+
+// Eliminazione record con conferma
+async function deleteLast(){
+  if(!confirm('Sei sicuro di voler eliminare l’ultimo record?')) return;
+  try{
+    await fetch('/delete_last', {method:'POST'});
+    lastSaved.innerHTML='';
+  } catch(err){ alert('Errore eliminazione'); console.error(err); }
+}
+
+// Stampa etichetta con conferma se già stampata
+async function printLabel(){
+  const code = parcelInput.value.trim();
+  if(!code){ alert('Inserisci Parcel ID'); return; }
+
+  try {
+    const res = await fetch('/print', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code})
+    });
+    const data = await res.json();
+    if(data.already_printed){
+      if(!confirm('Etichetta già stampata! Vuoi ristampare?')) return;
+    }
+    alert('Etichetta stampata (simulazione)');
+    parcelInput.value=''; parcelInput.focus();
+  } catch(err){ alert('Errore stampa'); console.error(err); }
+}
+</script>
+</body>
+</html>
