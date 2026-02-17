@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrazione Attività</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .hidden { display: none; }
+        .date-btns .btn { width: 100%; margin-bottom: 8px; }
+        .confirm-highlight { box-shadow: 0 0 0 .2rem rgba(255,193,7,.5); }
+        .op-qty { width: 110px; display:inline-block; margin-left:8px; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <span class="navbar-brand">Registrazione Attività</span>
+        <div class="d-flex">
+            <a id="nav_history" href="/history" class="btn btn-outline-light">Storico</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="card shadow">
+        <div class="card-body">
+            <form id="mainForm" method="POST" autocomplete="off">
+                <!-- User section -->
+                <div id="user_section" class="mb-4">
+                    <label for="user_input" class="form-label">Scansiona o inserisci codice utente</label>
+                    <input type="text" id="user_input" class="form-control form-control-lg" placeholder="Codice utente" autofocus required>
+                    <div class="form-text">Usa la pistola barcode o digita il codice e premi <strong>Invio</strong>.</div>
+                </div>
+
+                <!-- Main form section -->
+                <div id="form_section" class="hidden">
+                    <input type="hidden" name="user_id" id="user_id">
+                    <div class="alert alert-info" id="user_name"></div>
+
+                    <!-- Date selection -->
+                    <h5 class="mt-3">Seleziona data</h5>
+                    <p id="selected_date_text">Data: {{ today_text }}</p>
+                    <div class="date-btns row g-2 mb-2">
+                        {% for d in dates %}
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="btn btn-outline-primary" onclick="setDate('{{ d.value }}')">{{ d.label }}</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="date" id="date_input" value="{{ today_value }}">
+
+                    <!-- Activity type -->
+                    <h5 class="mt-3">Tipo attività</h5>
+                    <div id="activity_radios" class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="activity_type" id="type_assembly" value="assemblaggio" checked onchange="toggleActivityType()">
+                            <label class="form-check-label" for="type_assembly">Ordine di assemblaggio</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="activity_type" id="type_cut" value="taglio_sega" onchange="toggleActivityType()">
+                            <label class="form-check-label" for="type_cut">Taglio alla sega</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="activity_type" id="type_sbavatura" value="sbavatura" onchange="toggleActivityType()">
+                            <label class="form-check-label" for="type_sbavatura">Sbavatura pezzi</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="activity_type" id="type_fresatura" value="fresatura" onchange="toggleActivityType()">
+                            <label class="form-check-label" for="type_fresatura">Fresatura</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="activity_type" id="type_taglio_perni" value="taglio_perni" onchange="toggleActivityType()">
+                            <label class="form-check-label" for="type_taglio_perni">Taglio perni</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="activity_type" id="type_other" value="pausa" onchange="toggleActivityType()">
+                            <label class="form-check-label" for="type_other">Altro / Pausa</label>
+                        </div>
+                    </div>
+
+                    <!-- Order fields (order_code, quantity) -->
+                    <div id="order_fields" class="mt-3">
+                        <div class="mb-3">
+                            <label for="production_order" class="form-label">Codice ordine</label>
+                            <input type="text" name="order_code" id="production_order" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantità pezzi / maglie</label>
+                            <input type="number" name="quantity" id="quantity" class="form-control" min="0">
+                        </div>
+                        <div class="form-check mb-3" id="followed_cut_machine_div">
+                            <input class="form-check-input" type="checkbox" name="followed_cut_machine" id="followed_cut_machine">
+                            <label class="form-check-label" for="followed_cut_machine">Si è seguito la macchina taglioperni?</label>
+                        </div>
+                    </div>
+
+                    <!-- Material fields (per sbavatura, fresatura, taglio perni) -->
+                    <div id="material_fields" class="mt-3" style="display:none;">
+                        <div class="mb-3">
+                            <label for="material_code" class="form-label">Codice materiale</label>
+                            <input type="text" name="material" id="material_code" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="material_quantity" class="form-label">Quantità</label>
+                            <input type="number" name="material_quantity" id="material_quantity" class="form-control" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Causale (pausa / altro) -->
+                    <div id="causale_fields" class="mt-3" style="display:none;">
+                        <label class="form-label">Causale (facoltativo)</label>
+                        <input type="text" name="causale" class="form-control">
+                    </div>
+
+                    <!-- Times -->
+                    <div class="mt-2">
+                        <label class="form-label">Orario inizio</label>
+                        <input type="time" name="start_time" id="start_time" class="form-control" required>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Orario fine</label>
+                        <input type="time" name="end_time" id="finish_time" class="form-control" required>
+                    </div>
+
+                    <!-- Operazioni manuali -->
+                    <p class="mb-1 mt-3">Operazioni manuali:</p>
+
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="form-check me-2">
+                            <input class="form-check-input op-checkbox" type="checkbox" name="deburring" id="deburring">
+                            <label class="form-check-label" for="deburring">Sbavatura</label>
+                        </div>
+                        <input type="number" id="deburring_qty" name="deburring_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
+                    </div>
+
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="form-check me-2">
+                            <input class="form-check-input op-checkbox" type="checkbox" name="sorting" id="sorting">
+                            <label class="form-check-label" for="sorting">Cernita</label>
+                        </div>
+                        <input type="number" id="sorting_qty" name="sorting_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
+                    </div>
+
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="form-check me-2">
+                            <input class="form-check-input op-checkbox" type="checkbox" name="waste_disposal" id="waste_disposal">
+                            <label class="form-check-label" for="waste_disposal">Da smaltire</label>
+                        </div>
+                        <input type="number" id="waste_qty" name="waste_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button id="cancelBtn" type="button" class="btn btn-secondary btn-lg me-2" onclick="resetToUserEntry()">Annulla</button>
+                        <button id="submitBtn" type="submit" class="btn btn-success btn-lg">Conferma</button>
+                    </div>
+
+                    <div id="confirm_hint" class="mt-2 text-center text-warning" style="display:none;">
+                        Premi <strong>Invio</strong> di nuovo per confermare l'invio.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// === helper functions ===
+function showFormForUser(id, name) {
+    document.getElementById("user_id").value = id;
+    document.getElementById("user_name").innerText = "Utente: " + name;
+    document.getElementById("user_section").style.display = "none";
+    document.getElementById("form_section").classList.remove("hidden");
+    document.getElementById("nav_history").style.display = "none";
+    toggleActivityType();
+    setTimeout(() => { document.getElementById("production_order").focus(); }, 50);
+}
+
+function resetToUserEntry() {
+    document.getElementById("mainForm").reset();
+    document.getElementById("form_section").classList.add("hidden");
+    document.getElementById("user_section").style.display = "block";
+    document.getElementById("user_input").value = "";
+    document.getElementById("user_input").focus();
+    document.getElementById("user_name").innerText = "";
+    document.getElementById("confirm_hint").style.display = "none";
+    const navHistory = document.getElementById("nav_history");
+    if (navHistory) navHistory.style.display = "inline-block";
+    ["deburring_qty","sorting_qty","waste_qty"].forEach(id => {
+        const el = document.getElementById(id); if(el){el.style.display="none";}
+    });
+    confirmPending=false;
+    submitBtn.classList.remove("confirm-highlight");
+}
+
+// === user code enter ===
+document.getElementById("user_input").addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ e.preventDefault();
+        let code=this.value.trim();
+        if(!code) return;
+        fetch("/check_user/"+encodeURIComponent(code))
+            .then(r=>r.json())
+            .then(data=>{ if(data.exists){showFormForUser(data.id,data.name);} else{ alert("Utente non trovato!"); this.value=""; this.focus(); }})
+            .catch(err=>{console.error(err); alert("Errore server.");});
+    }
+});
+
+// === dates ===
+function setDate(dateStr){
+    document.getElementById("date_input").value=dateStr;
+    const d=new Date(dateStr+"T00:00:00");
+    const giorni=["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+    const mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+    const txt=`Data: ${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]} ${d.getFullYear()}`;
+    document.getElementById("selected_date_text").innerText=txt;
+}
+window.addEventListener("load",()=>{const v=document.getElementById("date_input").value;if(v)setDate(v);document.getElementById("nav_history").style.display="inline-block";});
+
+// === toggle activity ===
+function toggleActivityType(){
+    const assembly=document.getElementById("type_assembly").checked;
+    const cut=document.getElementById("type_cut").checked;
+    const sbavatura=document.getElementById("type_sbavatura").checked;
+    const fresatura=document.getElementById("type_fresatura").checked;
+    const taglio_perni=document.getElementById("type_taglio_perni").checked;
+    const orderFields=document.getElementById("order_fields");
+    const materialFields=document.getElementById("material_fields");
+    const causaleFields=document.getElementById("causale_fields");
+    const followedDiv=document.getElementById("followed_cut_machine_div");
+
+    // reset required
+    ["production_order","quantity","cut_model","cut_quantity","material_code","material_quantity"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.removeAttribute("required");
+    });
+
+    orderFields.style.display="none"; materialFields.style.display="none"; causaleFields.style.display="none"; followedDiv.style.display="none";
+
+    if(assembly){
+        orderFields.style.display="block"; followedDiv.style.display="block";
+        document.getElementById("production_order").setAttribute("required","required");
+        document.getElementById("quantity").setAttribute("required","required");
+    } else if(cut){
+        orderFields.style.display="block";
+        document.getElementById("production_order").setAttribute("required","required");
+        document.getElementById("quantity").setAttribute("required","required");
+    } else if(sbavatura || fresatura || taglio_perni){
+        materialFields.style.display="block";
+        document.getElementById("material_code").setAttribute("required","required");
+        document.getElementById("material_quantity").setAttribute("required","required");
+    } else if(document.getElementById("type_other").checked){
+        causaleFields.style.display="block";
+    }
+}
+
+// === operations manuali ===
+function toggleOpQty(cbId,qtyId){
+    const cb=document.getElementById(cbId);
+    const qty=document.getElementById(qtyId);
+    if(cb.checked){ qty.style.display="inline-block"; qty.setAttribute("required","required"); qty.focus();}
+    else{ qty.style.display="none"; qty.removeAttribute("required"); qty.value="";}
+}
+["deburring","sorting","waste_disposal"].forEach(op=>{
+    document.getElementById(op).addEventListener("change",()=>{toggleOpQty(op,op+"_qty");});
+});
+
+// === keyboard flow ===
+["production_order","quantity","start_time","finish_time","material_code","material_quantity"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+        el.addEventListener("keydown",function(e){
+            if(e.key==="Enter"){ e.preventDefault();
+                if(id==="production_order") document.getElementById("quantity").focus();
+                else if(id==="quantity") document.getElementById("start_time").focus();
+                else if(id==="material_code") document.getElementById("material_quantity").focus();
+                else if(id==="material_quantity") document.getElementById("start_time").focus();
+                else if(id==="start_time") document.getElementById("finish_time").focus();
+            }
+        });
+    }
+});
+
+// === double-enter confirmation ===
+const form=document.getElementById("mainForm"); const submitBtn=document.getElementById("submitBtn"); let confirmPending=false;
+form.addEventListener("submit",function(e){
+    if(!confirmPending){ e.preventDefault(); confirmPending=true; submitBtn.focus(); submitBtn.classList.add("confirm-highlight"); document.getElementById("confirm_hint").style.display="block"; }
+    else{ confirmPending=false; submitBtn.classList.remove("confirm-highlight"); document.getElementById("confirm_hint").style.display="none";}
+});
+document.getElementById("finish_time").addEventListener("keydown",function(e){
+    if(e.key==="Enter"){ e.preventDefault(); if(!confirmPending){ confirmPending=true; submitBtn.focus(); submitBtn.classList.add("confirm-highlight"); document.getElementById("confirm_hint").style.display="block"; } }
+});
+document.addEventListener("click",function(e){ if(!submitBtn.contains(e.target)){ confirmPending=false; submitBtn.classList.remove("confirm-highlight"); document.getElementById("confirm_hint").style.display="none"; } });
+["input","change"].forEach(evt=>{ form.addEventListener(evt,()=>{ confirmPending=false; submitBtn.classList.remove("confirm-highlight"); document.getElementById("confirm_hint").style.display="none"; }); });
+</script>
+</body>
+</html>

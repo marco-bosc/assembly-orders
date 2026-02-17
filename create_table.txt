@@ -1,0 +1,63 @@
+-- PostgreSQL
+CREATE TABLE IF NOT EXISTS hub_mes_orders (
+    id SERIAL PRIMARY KEY,
+    operator_id INTEGER NOT NULL,
+    event_type VARCHAR(50),
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    order_code VARCHAR(50),
+    material VARCHAR(50),
+    quantity INTEGER,
+    causale VARCHAR(100),
+    manual_deburring INTEGER DEFAULT 0,
+    manual_sorting INTEGER DEFAULT 0,
+    manual_waste INTEGER DEFAULT 0,
+    followed_cut_machine BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- FK su utenti (se esiste tabella users)
+    CONSTRAINT fk_operator FOREIGN KEY(operator_id) REFERENCES hub_mes_users(id)
+);
+
+-- Indici consigliati per performance
+-- CREATE INDEX IF NOT EXISTS idx_events_operator_date ON events(operator_id, date);
+-- CREATE INDEX IF NOT EXISTS idx_events_order_code ON events(order_code);
+-- CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
+
+CREATE TABLE hub_mes_users (
+    id SERIAL PRIMARY KEY,
+
+    user_code VARCHAR(50) NOT NULL UNIQUE,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+
+    active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+
+
+-- sqlite3
+CREATE TABLE IF NOT EXISTS hub_mes_orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operator_id INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    order_code TEXT,
+    material TEXT,
+    quantity INTEGER,
+    causale TEXT,
+    manual_deburring INTEGER DEFAULT 0,
+    manual_sorting INTEGER DEFAULT 0,
+    manual_waste INTEGER DEFAULT 0,
+    followed_cut_machine BOOLEAN DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- FK non strettamente enforceable in SQLite, ma puoi usarlo comunque
+    -- FOREIGN KEY(operator_id) REFERENCES users(id)
+);
+
+-- Indici
+-- CREATE INDEX IF NOT EXISTS idx_events_operator_date ON events(operator_id, date);
+-- CREATE INDEX IF NOT EXISTS idx_events_order_code ON events(order_code);
+-- CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);

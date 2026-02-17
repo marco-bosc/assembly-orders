@@ -4,173 +4,271 @@
     <meta charset="UTF-8">
     <title>Registrazione Attività</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap CSS -->
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
         .hidden { display: none; }
         .date-btns .btn { width: 100%; margin-bottom: 8px; }
         .confirm-highlight { box-shadow: 0 0 0 .2rem rgba(255,193,7,.5); }
         .op-qty { width: 110px; display:inline-block; margin-left:8px; }
+
+        /* activity selector */
+        .activity-item {
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+        }
+        .activity-item.active {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+        .activity-icon {
+            font-size: 1.3rem;
+            width: 32px;
+            text-align: center;
+        }
     </style>
 </head>
+
 <body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-dark bg-dark">
     <div class="container">
         <span class="navbar-brand">Registrazione Attività</span>
-        <div class="d-flex">
-            <!-- nav history: will be hidden when form_section visible -->
-            <a id="nav_history" href="/history" class="btn btn-outline-light">Storico</a>
-        </div>
+        <a id="nav_history" href="/history" class="btn btn-outline-light">Storico</a>
     </div>
 </nav>
 
 <div class="container py-4">
     <div class="card shadow">
         <div class="card-body">
+
             <form id="mainForm" method="POST" autocomplete="off">
-                <!-- User section -->
+
+                <!-- USER -->
                 <div id="user_section" class="mb-4">
-                    <label for="user_input" class="form-label">Scansiona o inserisci codice utente</label>
-                    <input type="text" id="user_input" class="form-control form-control-lg" placeholder="Codice utente" autofocus required>
-                    <div class="form-text">Usa la pistola barcode o digita il codice e premi <strong>Invio</strong>.</div>
+                    <label class="form-label">Scansiona o inserisci codice utente</label>
+                    <input type="text" id="user_input" class="form-control form-control-lg" autofocus required>
                 </div>
 
-                <!-- Main form section (hidden until valid user) -->
+                <!-- FORM -->
                 <div id="form_section" class="hidden">
+
                     <input type="hidden" name="user_id" id="user_id">
                     <div class="alert alert-info" id="user_name"></div>
 
-                    <h5 class="mt-3">Seleziona data</h5>
-                    <p id="selected_date_text">Data: {{ today_text }}</p>
-                    <div class="date-btns row g-2 mb-2">
+                    <!-- DATE -->
+                    <h6>Data</h6>
+                    <p id="selected_date_text"></p>
+                    <div class="date-btns row g-2 mb-3">
                         {% for d in dates %}
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-primary" onclick="setDate('{{ d.value }}')">{{ d.label }}</button>
+                            <button type="button" class="btn btn-outline-primary"
+                                    onclick="setDate('{{ d.value }}')">{{ d.label }}</button>
                         </div>
                         {% endfor %}
                     </div>
                     <input type="hidden" name="date" id="date_input" value="{{ today_value }}">
-<!-- 
-                    <div class="form-check mt-3 mb-3">
-                        <input class="form-check-input" type="checkbox" name="non_order" id="non_order" onchange="toggleOrderFields()">
-                        <label class="form-check-label" for="non_order">Non è un ordine di assemblaggio</label>
-                    </div> -->
 
-                    <h5 class="mt-3">Tipo attività</h5>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="activity_type" id="type_assembly" value="assembly" checked onchange="toggleActivityType()">
-                        <label class="form-check-label" for="type_assembly">Ordine di assemblaggio</label>
-                    </div>
+                    <div class="row mt-4">
 
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="activity_type" id="type_cut" value="cut" onchange="toggleActivityType()">
-                        <label class="form-check-label" for="type_cut">Taglio alla sega</label>
-                    </div>
+                        <!-- LEFT COLUMN -->
+                        <div class="col-md-4">
 
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="radio" name="activity_type" id="type_other" value="other" onchange="toggleActivityType()">
-                        <label class="form-check-label" for="type_other">Altro (pausa)</label>
-                    </div>
+                            <h6 class="mb-3">🧭 Tipo attività</h6>
 
+                            <!-- hidden radios -->
+                            <div class="d-none">
+                                <input type="radio" name="activity_type" id="type_assembly" value="assemblaggio" checked onchange="toggleActivityType()">
+                                <input type="radio" name="activity_type" id="type_cut" value="taglio_sega" onchange="toggleActivityType()">
+                                <input type="radio" name="activity_type" id="type_sbavatura" value="sbavatura" onchange="toggleActivityType()">
+                                <input type="radio" name="activity_type" id="type_fresatura" value="fresatura" onchange="toggleActivityType()">
+                                <input type="radio" name="activity_type" id="type_taglio_perni" value="taglio_perni" onchange="toggleActivityType()">
+                                <input type="radio" name="activity_type" id="type_other" value="pausa" onchange="toggleActivityType()">
+                            </div>
 
-                    <!-- Order fields -->
-                    <div id="order_fields" class="mt-3">
-                        <div class="mb-3">
-                            <label for="production_order" class="form-label">Codice ordine</label>
-                            <input type="text" name="production_order" id="production_order" class="form-control" >
+                            <!-- visual selector -->
+                            <div class="activity-item active" onclick="selectActivity('type_assembly', this)">
+                                <div class="activity-icon">⚙️</div> Assemblaggio
+                            </div>
+                            <div class="activity-item" onclick="selectActivity('type_cut', this)">
+                                <div class="activity-icon">🪚</div> Taglio sega
+                            </div>
+                            <div class="activity-item" onclick="selectActivity('type_sbavatura', this)">
+                                <div class="activity-icon">🧽</div> Sbavatura
+                            </div>
+                            <div class="activity-item" onclick="selectActivity('type_fresatura', this)">
+                                <div class="activity-icon">🌀</div> Fresatura
+                            </div>
+                            <div class="activity-item" onclick="selectActivity('type_taglio_perni', this)">
+                                <div class="activity-icon">✂️</div> Taglio perni
+                            </div>
+                            <div class="activity-item" onclick="selectActivity('type_other', this)">
+                                <div class="activity-icon">☕</div> Pausa / Altro
+                            </div>
+
                         </div>
-                        <div class="mb-3">
-                            <label for="quantity" class="form-label">Numero maglie</label>
-                            <input type="number" name="quantity" id="quantity" class="form-control" min="0">
+
+                        <!-- RIGHT COLUMN -->
+                        <div class="col-md-8">
+
+                            <!-- ORDER -->
+                            <div id="order_fields">
+                                <div class="mb-2">
+                                    <label class="form-label">Codice ordine</label>
+                                    <input type="text" name="order_code" id="production_order" class="form-control">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Quantità</label>
+                                    <input type="number" name="quantity" id="quantity" class="form-control">
+                                </div>
+                                <div class="form-check mb-3" id="followed_cut_machine_div">
+                                    <input class="form-check-input" type="checkbox" name="followed_cut_machine" id="followed_cut_machine">
+                                    <label class="form-check-label">Seguita macchina taglioperni</label>
+                                </div>
+                            </div>
+
+                            <!-- MATERIAL -->
+                            <div id="material_fields" style="display:none;">
+                                <div class="mb-2">
+                                    <label class="form-label">Codice materiale</label>
+                                    <input type="text" name="material" id="material_code" class="form-control">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Quantità</label>
+                                    <input type="number" name="material_quantity" id="material_quantity" class="form-control">
+                                </div>
+                            </div>
+
+                            <!-- CAUSALE -->
+                            <div id="causale_fields" style="display:none;">
+                                <label class="form-label">Causale</label>
+                                <input type="text" name="causale" class="form-control">
+                            </div>
+
+                            <!-- TIME -->
+                            <div class="row mt-3">
+                                <div class="col">
+                                    <label class="form-label">Inizio</label>
+                                    <input type="time" name="start_time" id="start_time" class="form-control" required>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Fine</label>
+                                    <input type="time" name="end_time" id="finish_time" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <!-- MANUAL OPS -->
+                            <p class="mt-3 mb-1">Operazioni manuali</p>
+
+                            <div class="d-flex align-items-center mb-2">
+                                <input type="checkbox" id="deburring" class="form-check-input me-2">
+                                Sbavatura
+                                <input type="number" id="deburring_qty" name="deburring_qty" class="form-control op-qty" style="display:none;">
+                            </div>
+
+                            <div class="d-flex align-items-center mb-2">
+                                <input type="checkbox" id="sorting" class="form-check-input me-2">
+                                Cernita
+                                <input type="number" id="sorting_qty" name="sorting_qty" class="form-control op-qty" style="display:none;">
+                            </div>
+
+                            <div class="d-flex align-items-center mb-3">
+                                <input type="checkbox" id="waste_disposal" class="form-check-input me-2">
+                                Smaltimento
+                                <input type="number" id="waste_qty" name="waste_qty" class="form-control op-qty" style="display:none;">
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="text-end">
+                                <button type="button" class="btn btn-secondary btn-lg me-2" onclick="resetToUserEntry()">Annulla</button>
+                                <button id="submitBtn" type="submit" class="btn btn-success btn-lg">Conferma</button>
+                            </div>
+
+                            <div id="confirm_hint" class="text-warning mt-2" style="display:none;">
+                                Premi Invio di nuovo per confermare
+                            </div>
+
                         </div>
                     </div>
 
-                    <!-- Non-order fields -->
-                    <div id="non_order_fields" class="mt-3" style="display:none;">
-                        <div id="cut_fields" style="display:none;">
-                            <label class="form-label">Modello</label>
-                            <input type="text" name="cut_model" id="cut_model" class="form-control mb-3">
-
-                            <label class="form-label">Quantità</label>
-                            <input type="number" name="cut_quantity" id="cut_quantity" class="form-control" min="0">
-                        </div>
-                        <label class="form-label">Causale (facoltativo)</label>
-                        <input type="text" name="causale" class="form-control">
-                    </div>
-
-                    <!-- Times first (start, finish) -->
-                    <div class="mt-2">
-                        <label class="form-label">Orario inizio</label>
-                        <input type="time" name="start_time" id="start_time" class="form-control" required>
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label">Orario fine</label>
-                        <input type="time" name="finish_time" id="finish_time" class="form-control" required>
-                    </div>
-
-                    <!-- Operations after times -->
-                    <p class="mb-1 mt-3">Operazioni manuali:</p>
-
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="form-check me-2">
-                            <input class="form-check-input op-checkbox" type="checkbox" name="deburring" id="deburring">
-                            <label class="form-check-label" for="deburring">Sbavatura</label>
-                        </div>
-                        <input type="number" id="deburring_qty" name="deburring_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
-                    </div>
-
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="form-check me-2">
-                            <input class="form-check-input op-checkbox" type="checkbox" name="sorting" id="sorting">
-                            <label class="form-check-label" for="sorting">Cernita</label>
-                        </div>
-                        <input type="number" id="sorting_qty" name="sorting_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
-                    </div>
-
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="form-check me-2">
-                            <input class="form-check-input op-checkbox" type="checkbox" name="waste_disposal" id="waste_disposal">
-                            <label class="form-check-label" for="waste_disposal">Da smaltire</label>
-                        </div>
-                        <input type="number" id="waste_qty" name="waste_qty" class="form-control op-qty" placeholder="n°" min="0" style="display:none;">
-                    </div>
-
-                    <div class="mt-4 text-end">
-                        <button id="cancelBtn" type="button" class="btn btn-secondary btn-lg me-2" onclick="resetToUserEntry()">Annulla</button>
-                        <button id="submitBtn" type="submit" class="btn btn-success btn-lg">Conferma</button>
-                    </div>
-
-                    <div id="confirm_hint" class="mt-2 text-center text-warning" style="display:none;">
-                        Premi <strong>Invio</strong> di nuovo per confermare l'invio.
-                    </div>
                 </div>
             </form>
+
         </div>
     </div>
 </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- <script>
+function selectActivity(radioId, el){
+    document.getElementById(radioId).checked = true;
+    document.querySelectorAll(".activity-item").forEach(i => i.classList.remove("active"));
+    el.classList.add("active");
+    toggleActivityType();
+}
+</script> -->
+
 <script>
-/* ---------- helper UI functions ---------- */
+function selectActivity(radioId, el){
+    // selezione visuale
+    document.getElementById(radioId).checked = true;
+    document.querySelectorAll(".activity-item").forEach(i => i.classList.remove("active"));
+    el.classList.add("active");
+
+    // aggiorna visibilità campi
+    toggleActivityType();
+
+    // focus intelligente (leggermente ritardato per sicurezza)
+    setTimeout(() => {
+        focusFirstField();
+    }, 50);
+}
+
+function focusFirstField(){
+    if (document.getElementById("order_fields").style.display !== "none") {
+        document.getElementById("production_order")?.focus();
+        return;
+    }
+
+    if (document.getElementById("material_fields").style.display !== "none") {
+        document.getElementById("material_code")?.focus();
+        return;
+    }
+
+    if (document.getElementById("causale_fields").style.display !== "none") {
+        document.querySelector('#causale_fields input')?.focus();
+        return;
+    }
+
+    // fallback: orario inizio
+    document.getElementById("start_time")?.focus();
+}
+</script>
+
+
+<script>
+// === helper functions ===
 function showFormForUser(id, name) {
     document.getElementById("user_id").value = id;
     document.getElementById("user_name").innerText = "Utente: " + name;
     document.getElementById("user_section").style.display = "none";
     document.getElementById("form_section").classList.remove("hidden");
-    // hide history link when inside the form
-    const navHistory = document.getElementById("nav_history");
-    if (navHistory) navHistory.style.display = "none";
-    // set required fields according to checkbox state
+    document.getElementById("nav_history").style.display = "none";
     toggleActivityType();
-    // focus first input (production_order)
     setTimeout(() => { document.getElementById("production_order").focus(); }, 50);
 }
 
 function resetToUserEntry() {
-    // clear form fields and show user entry
     document.getElementById("mainForm").reset();
     document.getElementById("form_section").classList.add("hidden");
     document.getElementById("user_section").style.display = "block";
@@ -178,219 +276,114 @@ function resetToUserEntry() {
     document.getElementById("user_input").focus();
     document.getElementById("user_name").innerText = "";
     document.getElementById("confirm_hint").style.display = "none";
-    // show history link
     const navHistory = document.getElementById("nav_history");
     if (navHistory) navHistory.style.display = "inline-block";
-    // hide op qty inputs
     ["deburring_qty","sorting_qty","waste_qty"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = "none";
+        const el = document.getElementById(id); if(el){el.style.display="none";}
     });
-    confirmPending = false;
+    confirmPending=false;
     submitBtn.classList.remove("confirm-highlight");
 }
 
-/* ---------- check user on Enter ---------- */
-document.getElementById("user_input").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        let code = this.value.trim();
-        if (!code) return;
-        fetch("/check_user/" + encodeURIComponent(code))
-            .then(r => r.json())
-            .then(data => {
-                if (data.exists) {
-                    showFormForUser(data.id, data.name);
-                } else {
-                    alert("Utente non trovato!");
-                    this.value = "";
-                    this.focus();
-                }
-            })
-            .catch(err => { console.error(err); alert("Errore server."); });
+// === user code enter ===
+document.getElementById("user_input").addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ e.preventDefault();
+        let code=this.value.trim();
+        if(!code) return;
+        fetch("/check_user/"+encodeURIComponent(code))
+            .then(r=>r.json())
+            .then(data=>{ if(data.exists){showFormForUser(data.id,data.name);} else{ alert("Utente non trovato!"); this.value=""; this.focus(); }})
+            .catch(err=>{console.error(err); alert("Errore server.");});
     }
 });
 
-/* ---------- dates ---------- */
-function setDate(dateStr) {
-    document.getElementById("date_input").value = dateStr;
-    // format textual date in Italian
-    const d = new Date(dateStr + "T00:00:00");
-    const giorni = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
-    const mesi = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
-    const txt = `Data: ${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]} ${d.getFullYear()}`;
-    document.getElementById("selected_date_text").innerText = txt;
+// === dates ===
+function setDate(dateStr){
+    document.getElementById("date_input").value=dateStr;
+    const d=new Date(dateStr+"T00:00:00");
+    const giorni=["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+    const mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+    const txt=`Data: ${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]} ${d.getFullYear()}`;
+    document.getElementById("selected_date_text").innerText=txt;
 }
-window.addEventListener("load", function() {
-    const v = document.getElementById("date_input").value;
-    if (v) setDate(v);
-    // ensure nav_history visible on initial load
-    const navHistory = document.getElementById("nav_history");
-    if (navHistory) navHistory.style.display = "inline-block";
-});
+window.addEventListener("load",()=>{const v=document.getElementById("date_input").value;if(v)setDate(v);document.getElementById("nav_history").style.display="inline-block";});
 
-// /* ---------- toggle required fields based on non_order ---------- */
-// function toggleOrderFields() {
-//     const check = document.getElementById("non_order").checked;
-//     document.getElementById("order_fields").style.display = check ? "none" : "block";
-//     document.getElementById("non_order_fields").style.display = check ? "block" : "none";
+// === toggle activity ===
+function toggleActivityType(){
+    const assembly=document.getElementById("type_assembly").checked;
+    const cut=document.getElementById("type_cut").checked;
+    const sbavatura=document.getElementById("type_sbavatura").checked;
+    const fresatura=document.getElementById("type_fresatura").checked;
+    const taglio_perni=document.getElementById("type_taglio_perni").checked;
+    const orderFields=document.getElementById("order_fields");
+    const materialFields=document.getElementById("material_fields");
+    const causaleFields=document.getElementById("causale_fields");
+    const followedDiv=document.getElementById("followed_cut_machine_div");
 
-//     const production = document.getElementById("production_order");
-//     const quantity = document.getElementById("quantity");
-//     if (!check) {
-//         production.setAttribute("required", "required");
-//         quantity.setAttribute("required", "required");
-//     } else {
-//         production.removeAttribute("required");
-//         quantity.removeAttribute("required");
-//     }
-// }
-
-function toggleActivityType() {
-    const assembly = document.getElementById("type_assembly").checked;
-    const cut = document.getElementById("type_cut").checked;
-
-    const orderFields = document.getElementById("order_fields");
-    const nonOrderFields = document.getElementById("non_order_fields");
-    const cutFields = document.getElementById("cut_fields");
-
-    // RESET requirement
-    document.getElementById("production_order").removeAttribute("required");
-    document.getElementById("quantity").removeAttribute("required");
-    document.getElementById("cut_model").removeAttribute("required");
-    document.getElementById("cut_quantity").removeAttribute("required");
-
-    if (assembly) {
-        // solo ordine di assemblaggio
-        orderFields.style.display = "block";
-        nonOrderFields.style.display = "none";
-        cutFields.style.display = "none";
-
-        // obbligatori
-        document.getElementById("production_order").setAttribute("required", "required");
-        document.getElementById("quantity").setAttribute("required", "required");
-    }
-    else if (cut) {
-        // taglio alla sega: niente order_fields
-        orderFields.style.display = "none";
-        nonOrderFields.style.display = "block";
-        cutFields.style.display = "block";
-
-        // obbligatori
-        document.getElementById("cut_model").setAttribute("required", "required");
-        document.getElementById("cut_quantity").setAttribute("required", "required");
-    }
-    else {
-        // altro (pausa)
-        orderFields.style.display = "none";
-        nonOrderFields.style.display = "block";
-        cutFields.style.display = "none";
-        // nessun required
-    }
-}
-
-
-/* ---------- operations: show qty input when checkbox checked and make qty required ---------- */
-function toggleOpQty(checkboxId, qtyId) {
-    const cb = document.getElementById(checkboxId);
-    const qty = document.getElementById(qtyId);
-    if (cb.checked) {
-        qty.style.display = "inline-block";
-        qty.setAttribute("required","required");
-        qty.focus();
-    } else {
-        qty.style.display = "none";
-        qty.removeAttribute("required");
-        qty.value = "";
-    }
-}
-["deburring","sorting","waste_disposal"].forEach(function(opId){
-    document.getElementById(opId).addEventListener("change", function(){
-        if (opId === "deburring") toggleOpQty("deburring","deburring_qty");
-        if (opId === "sorting") toggleOpQty("sorting","sorting_qty");
-        if (opId === "waste_disposal") toggleOpQty("waste_disposal","waste_qty");
+    // reset required
+    ["production_order","quantity","cut_model","cut_quantity","material_code","material_quantity"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.removeAttribute("required");
     });
+
+    orderFields.style.display="none"; materialFields.style.display="none"; causaleFields.style.display="none"; followedDiv.style.display="none";
+
+    if(assembly){
+        orderFields.style.display="block"; followedDiv.style.display="block";
+        document.getElementById("production_order").setAttribute("required","required");
+        document.getElementById("quantity").setAttribute("required","required");
+    } else if(cut){
+        orderFields.style.display="block";
+        document.getElementById("production_order").setAttribute("required","required");
+        document.getElementById("quantity").setAttribute("required","required");
+    } else if(sbavatura || fresatura || taglio_perni){
+        materialFields.style.display="block";
+        document.getElementById("material_code").setAttribute("required","required");
+        document.getElementById("material_quantity").setAttribute("required","required");
+    } else if(document.getElementById("type_other").checked){
+        causaleFields.style.display="block";
+    }
+}
+
+// === operations manuali ===
+function toggleOpQty(cbId,qtyId){
+    const cb=document.getElementById(cbId);
+    const qty=document.getElementById(qtyId);
+    if(cb.checked){ qty.style.display="inline-block"; qty.setAttribute("required","required"); qty.focus();}
+    else{ qty.style.display="none"; qty.removeAttribute("required"); qty.value="";}
+}
+["deburring","sorting","waste_disposal"].forEach(op=>{
+    document.getElementById(op).addEventListener("change",()=>{toggleOpQty(op,op+"_qty");});
 });
 
-/* ---------- keyboard flow: order -> quantity -> start -> finish ---------- */
-document.getElementById("production_order").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") { e.preventDefault(); document.getElementById("quantity").focus(); }
-});
-document.getElementById("quantity").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") { e.preventDefault(); document.getElementById("start_time").focus(); }
-});
-document.getElementById("start_time").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") { e.preventDefault(); document.getElementById("finish_time").focus(); }
-});
-
-/* ---------- keyboard flow for CUT MODE ---------- */
-document.getElementById("cut_model").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        document.getElementById("cut_quantity").focus();
+// === keyboard flow ===
+["production_order","quantity","start_time","finish_time","material_code","material_quantity"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+        el.addEventListener("keydown",function(e){
+            if(e.key==="Enter"){ e.preventDefault();
+                if(id==="production_order") document.getElementById("quantity").focus();
+                else if(id==="quantity") document.getElementById("start_time").focus();
+                else if(id==="material_code") document.getElementById("material_quantity").focus();
+                else if(id==="material_quantity") document.getElementById("start_time").focus();
+                else if(id==="start_time") document.getElementById("finish_time").focus();
+            }
+        });
     }
 });
 
-document.getElementById("cut_quantity").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        document.getElementById("start_time").focus();
-    }
+// === double-enter confirmation ===
+const form=document.getElementById("mainForm"); const submitBtn=document.getElementById("submitBtn"); let confirmPending=false;
+form.addEventListener("submit",function(e){
+    if(!confirmPending){ e.preventDefault(); confirmPending=true; submitBtn.focus(); submitBtn.classList.add("confirm-highlight"); document.getElementById("confirm_hint").style.display="block"; }
+    else{ confirmPending=false; submitBtn.classList.remove("confirm-highlight"); document.getElementById("confirm_hint").style.display="none";}
 });
-
-
-/* ---------- double-enter confirmation logic ---------- */
-const form = document.getElementById("mainForm");
-const submitBtn = document.getElementById("submitBtn");
-let confirmPending = false;
-
-form.addEventListener("submit", function(e) {
-    if (!confirmPending) {
-        // first submit attempt -> block, show hint and focus submit button
-        e.preventDefault();
-        confirmPending = true;
-        submitBtn.focus();
-        submitBtn.classList.add("confirm-highlight");
-        document.getElementById("confirm_hint").style.display = "block";
-    } else {
-        // second submit (confirmed) -> allow (do not preventDefault)
-        confirmPending = false;
-        submitBtn.classList.remove("confirm-highlight");
-        document.getElementById("confirm_hint").style.display = "none";
-        // normal form submission proceeds
-    }
+document.getElementById("finish_time").addEventListener("keydown",function(e){
+    if(e.key==="Enter"){ e.preventDefault(); if(!confirmPending){ confirmPending=true; submitBtn.focus(); submitBtn.classList.add("confirm-highlight"); document.getElementById("confirm_hint").style.display="block"; } }
 });
-
-// If Enter from finish_time pressed, trigger first confirmation step
-document.getElementById("finish_time").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        if (!confirmPending) {
-            confirmPending = true;
-            submitBtn.focus();
-            submitBtn.classList.add("confirm-highlight");
-            document.getElementById("confirm_hint").style.display = "block";
-        } else {
-            // second Enter will submit (form listener handles it)
-        }
-    }
-});
-
-// Reset confirmation if user clicks anywhere else or edits inputs
-document.addEventListener("click", function(e) {
-    if (!submitBtn.contains(e.target)) {
-        confirmPending = false;
-        submitBtn.classList.remove("confirm-highlight");
-        document.getElementById("confirm_hint").style.display = "none";
-    }
-});
-["input","change"].forEach(evt => {
-    form.addEventListener(evt, () => {
-        confirmPending = false;
-        submitBtn.classList.remove("confirm-highlight");
-        document.getElementById("confirm_hint").style.display = "none";
-    });
-});
+document.addEventListener("click",function(e){ if(!submitBtn.contains(e.target)){ confirmPending=false; submitBtn.classList.remove("confirm-highlight"); document.getElementById("confirm_hint").style.display="none"; } });
+["input","change"].forEach(evt=>{ form.addEventListener(evt,()=>{ confirmPending=false; submitBtn.classList.remove("confirm-highlight"); document.getElementById("confirm_hint").style.display="none"; }); });
 </script>
+
 </body>
 </html>
